@@ -63,7 +63,15 @@ function TranslateWindow.new(text)
 
     -- 创建缓冲区
     self.bufnr = api.nvim_create_buf(false, true)
-    api.nvim_buf_set_lines(self.bufnr, 0, -1, false, vim.split(text, '\n'))
+    -- 过滤掉包含特定关键字的行
+    local lines = vim.split(text, '\n')
+    local filtered_lines = {}
+    for _, line in ipairs(lines) do
+        if not line:find("未找到守护进程") and not line:find("成功启动守护进程") then
+            table.insert(filtered_lines, line)
+        end
+    end
+    api.nvim_buf_set_lines(self.bufnr, 0, -1, false, filtered_lines)
     api.nvim_buf_set_option(self.bufnr, 'modifiable', false)
     api.nvim_buf_set_option(self.bufnr, 'filetype', 'markdown')
 
@@ -128,7 +136,8 @@ function M.translate(mode)
     -- 去除首尾空格后检查是否包含内部空格（多个单词）
     local trimmed_text = text:match("^%s*(.-)%s*$")  -- 去除首尾空格
     local cmd = { translate_cmd }
-    if trimmed_text:find("%s+") then  -- 检查是否包含内部空格
+    -- 检查是否包含内部空格或中文
+    if trimmed_text:find("[%z\1-\127\194-\244][\128-\191]*") or trimmed_text:find("%s+") then  
         table.insert(cmd, "-t")
     end
     table.insert(cmd, text)
