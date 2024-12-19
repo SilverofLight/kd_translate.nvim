@@ -136,8 +136,9 @@ function M.translate(mode)
     -- 去除首尾空格后检查是否包含内部空格（多个单词）
     local trimmed_text = text:match("^%s*(.-)%s*$")  -- 去除首尾空格
     local cmd = { translate_cmd }
-    -- 检查是否包含内部空格或中文
-    if trimmed_text:find("[%z\1-\127\194-\244][\128-\191]*") or trimmed_text:find("%s+") then  
+    -- 检查是否包含中文字符或内部空格
+    if trimmed_text:find("[\xE4-\xE9][\x80-\xBF][\x80-\xBF]") or trimmed_text:find("%s+") then
+        print("here")
         table.insert(cmd, "-t")
     end
     table.insert(cmd, text)
