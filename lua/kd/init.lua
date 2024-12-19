@@ -5,6 +5,18 @@ local fn = vim.fn
 -- 默认配置
 M.config = {
     -- 翻译命令配置
+    window = {
+        width = 80,        -- 最大宽度
+        height = 10,       -- 最大高度
+        border = 'rounded', -- 边框样式
+        title = ' 翻译结果 ', -- 标题
+        title_pos = 'center', -- 标题位置
+        style = 'minimal',    -- 窗口样式
+        relative = 'cursor',  -- 窗口位置相对于光标
+        focusable = true,    -- 是否可以获得焦点
+        row = 1,             -- 相对于光标的垂直偏移
+        col = 0,             -- 相对于光标的水平偏移
+    }
 }
 local translate_cmd = "kd"
 
@@ -34,16 +46,6 @@ end
 local TranslateWindow = {}
 TranslateWindow.__index = TranslateWindow
 
--- 默认窗口配置
-local default_win_opts = {
-    style = 'minimal',
-    border = 'rounded',
-    relative = 'cursor',
-    focusable = true,
-    title = ' 翻译结果 ',
-    title_pos = 'center',
-}
-
 ---创建新的翻译窗口
 ---@param text string 要显示的文本内容
 ---@return TranslateWindow
@@ -57,15 +59,13 @@ function TranslateWindow.new(text)
     api.nvim_buf_set_option(self.bufnr, 'filetype', 'markdown')
     
     -- 计算窗口尺寸
-    local width = math.min(80, vim.o.columns - 4)
-    local height = math.min(10, vim.o.lines - 4)
+    local width = math.min(M.config.window.width, vim.o.columns - 4)
+    local height = math.min(M.config.window.height, vim.o.lines - 4)
     
     -- 设置窗口配置
-    self.win_opts = vim.tbl_extend('force', default_win_opts, {
+    self.win_opts = vim.tbl_extend('force', M.config.window, {
         width = width,
         height = height,
-        row = 1,  -- 在光标下方显示
-        col = 0,
     })
     
     -- 创建窗口
