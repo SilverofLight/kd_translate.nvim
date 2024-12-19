@@ -25,22 +25,31 @@ local current_window = nil
 
 -- 获取选中的文本
 local function get_visual_selection()
-    local mode = api.nvim_get_mode().mode
-    if mode ~= 'v' and mode ~= 'V' then
-        return fn.expand('<cword>')  -- 如果不在可视模式，返回光标下的词
-    end
+    -- 获取可视模式类型
+    -- 获取选区的起始和结束位置
+    local start_pos = vim.fn.getpos("'<")
+    local end_pos = vim.fn.getpos("'>")
+    local start_row, start_col = start_pos[2], start_pos[3]
+    local end_row, end_col = end_pos[2], end_pos[3]
 
-    -- 保存当前选区
-    vim.cmd('noau normal! "vy"')
-    
-    -- 从 v 寄存器获取选中的文本
-    local text = fn.getreg('v')
-    
-    -- 清理寄存器
-    fn.setreg('v', {})
-    
-    return text
+    -- 检查是否跨行
+    if start_row == end_row then
+        -- 单行选区：提取范围内的文本
+        local line = vim.api.nvim_get_current_line()
+        return line:sub(start_col, end_col)
+    else
+        -- 多行选区：提取范围内的多行文本
+        local lines = vim.api.nvim_buf_get_lines(0, start_row - 1, end_row, false)
+
+        -- 处理第一行和最后一行的边界
+        lines[1] = lines[1]:sub(start_col)
+        lines[#lines] = lines[#lines]:sub(1, end_col)
+
+        -- 拼接为字符串（多行间添加换行符）
+        return table.concat(lines, "\n")
+    end
 end
+
 
 ---@class TranslateWindow
 local TranslateWindow = {}
@@ -51,29 +60,29 @@ TranslateWindow.__index = TranslateWindow
 ---@return TranslateWindow
 function TranslateWindow.new(text)
     local self = setmetatable({}, TranslateWindow)
-    
+
     -- 创建缓冲区
     self.bufnr = api.nvim_create_buf(false, true)
     api.nvim_buf_set_lines(self.bufnr, 0, -1, false, vim.split(text, '\n'))
     api.nvim_buf_set_option(self.bufnr, 'modifiable', false)
     api.nvim_buf_set_option(self.bufnr, 'filetype', 'markdown')
-    
+
     -- 计算窗口尺寸
     local width = math.min(M.config.window.width, vim.o.columns - 4)
     local height = math.min(M.config.window.height, vim.o.lines - 4)
-    
+
     -- 设置窗口配置
     self.win_opts = vim.tbl_extend('force', M.config.window, {
         width = width,
         height = height,
     })
-    
+
     -- 创建窗口
     self:open()
-    
+
     -- 设置按键映射
     self:setup_keymaps()
-    
+
     return self
 end
 function TranslateWindow:open()
@@ -102,14 +111,20 @@ function TranslateWindow:close()
 end
 
 -- 修改翻译函数
-function M.translate()
+function M.translate(mode)
     -- 如果存在旧窗口，先关闭它
     if current_window and current_window:is_valid() then
         current_window:close()
     end
 
-    local text = get_visual_selection()
-    
+    local text = ""
+
+    if mode ~= 'v' and mode ~= 'V' and mode ~= '\x16' then
+        text = vim.fn.expand('<cword>')  -- 如果不在可视模式，返回光标下的词
+    else
+        text = get_visual_selection()
+    end
+
     -- 去除首尾空格后检查是否包含内部空格（多个单词）
     local trimmed_text = text:match("^%s*(.-)%s*$")  -- 去除首尾空格
     local cmd = { translate_cmd }
@@ -119,7 +134,7 @@ function M.translate()
     table.insert(cmd, text)
 
     -- vim.notify(vim.inspect(cmd))
-    
+
     vim.system(
         cmd,
         { text = true },
