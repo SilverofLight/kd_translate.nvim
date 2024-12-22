@@ -16,6 +16,24 @@ M.config = {
         focusable = true,    -- 是否可以获得焦点
         row = 1,             -- 相对于光标的垂直偏移
         col = 0,             -- 相对于光标的水平偏移
+    },
+    -- 添加高亮组配置
+    highlights = {
+        word = {
+            fg = "#FF0000",    -- 前景色
+            -- bg = "#FFFFFF",    -- 背景色
+            bold = false,       -- 是否粗体
+            italic = false,    -- 是否斜体
+            underline = true  -- 是否下划线
+        },
+        phonetic = {          -- 音标高亮
+            fg = "#00FF00",
+            bg = "NONE",
+            bold = false,
+            italic = true,
+            underline = false
+        },
+        -- 可以添加更多高亮组...
     }
 }
 local translate_cmd = "kd"
@@ -50,6 +68,46 @@ local function get_visual_selection()
     end
 end
 
+-- 将 set_highlights 定义为 M 的方法
+function M.set_highlights()
+    local highlights = M.config.highlights
+    
+    -- 设置单词高亮
+    if highlights.word then
+        local word_hl = "highlight kdWord"
+        if highlights.word.fg then word_hl = word_hl .. " guifg=" .. highlights.word.fg end
+        if highlights.word.bg then word_hl = word_hl .. " guibg=" .. highlights.word.bg end
+        
+        local gui = {}
+        if highlights.word.bold then table.insert(gui, "bold") end
+        if highlights.word.italic then table.insert(gui, "italic") end
+        if highlights.word.underline then table.insert(gui, "underline") end
+        
+        if #gui > 0 then
+            word_hl = word_hl .. " gui=" .. table.concat(gui, ",")
+        end
+        
+        vim.cmd(word_hl)
+    end
+    
+    -- 设置音标高亮
+    if highlights.phonetic then
+        local phonetic_hl = "highlight kdPhonetic"
+        if highlights.phonetic.fg then phonetic_hl = phonetic_hl .. " guifg=" .. highlights.phonetic.fg end
+        if highlights.phonetic.bg then phonetic_hl = phonetic_hl .. " guibg=" .. highlights.phonetic.bg end
+        
+        local gui = {}
+        if highlights.phonetic.bold then table.insert(gui, "bold") end
+        if highlights.phonetic.italic then table.insert(gui, "italic") end
+        if highlights.phonetic.underline then table.insert(gui, "underline") end
+        
+        if #gui > 0 then
+            phonetic_hl = phonetic_hl .. " gui=" .. table.concat(gui, ",")
+        end
+        
+        vim.cmd(phonetic_hl)
+    end
+end
 
 ---@class TranslateWindow
 local TranslateWindow = {}
@@ -72,8 +130,16 @@ function TranslateWindow.new(text)
         end
     end
     api.nvim_buf_set_lines(self.bufnr, 0, -1, false, filtered_lines)
+    
+    -- 设置缓冲区选项
     api.nvim_buf_set_option(self.bufnr, 'modifiable', false)
-    api.nvim_buf_set_option(self.bufnr, 'filetype', 'markdown')
+    api.nvim_buf_set_option(self.bufnr, 'filetype', 'kd')  -- 这会自动加载我们的语法文件
+    
+    -- 确保语法高亮开启并应用自定义高亮
+    vim.api.nvim_buf_call(self.bufnr, function()
+        vim.cmd('syntax enable')
+        M.set_highlights()  -- 使用 M.set_highlights
+    end)
 
     -- 计算窗口尺寸
     local width = math.min(M.config.window.width, vim.o.columns - 4)
@@ -93,9 +159,14 @@ function TranslateWindow.new(text)
 
     return self
 end
+
 function TranslateWindow:open()
     self.winid = api.nvim_open_win(self.bufnr, true, self.win_opts)
     api.nvim_win_set_option(self.winid, 'wrap', true)
+    -- 确保窗口中启用语法高亮
+    vim.api.nvim_win_call(self.winid, function()
+        vim.cmd('syntax enable')
+    end)
 end
 
 ---设置按键映射
@@ -165,9 +236,11 @@ function M.translate(mode)
     )
 end
 
--- 设置函数
+-- 修改 setup 函数
 function M.setup(opts)
     M.config = vim.tbl_deep_extend("force", M.config, opts or {})
+    -- 初始设置高亮
+    M.set_highlights()
 end
 
 
