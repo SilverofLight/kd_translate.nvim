@@ -71,40 +71,40 @@ end
 -- 将 set_highlights 定义为 M 的方法
 function M.set_highlights()
     local highlights = M.config.highlights
-    
+
     -- 设置单词高亮
     if highlights.word then
         local word_hl = "highlight kdWord"
         if highlights.word.fg then word_hl = word_hl .. " guifg=" .. highlights.word.fg end
         if highlights.word.bg then word_hl = word_hl .. " guibg=" .. highlights.word.bg end
-        
+
         local gui = {}
         if highlights.word.bold then table.insert(gui, "bold") end
         if highlights.word.italic then table.insert(gui, "italic") end
         if highlights.word.underline then table.insert(gui, "underline") end
-        
+
         if #gui > 0 then
             word_hl = word_hl .. " gui=" .. table.concat(gui, ",")
         end
-        
+
         vim.cmd(word_hl)
     end
-    
+
     -- 设置音标高亮
     if highlights.phonetic then
         local phonetic_hl = "highlight kdPhonetic"
         if highlights.phonetic.fg then phonetic_hl = phonetic_hl .. " guifg=" .. highlights.phonetic.fg end
         if highlights.phonetic.bg then phonetic_hl = phonetic_hl .. " guibg=" .. highlights.phonetic.bg end
-        
+
         local gui = {}
         if highlights.phonetic.bold then table.insert(gui, "bold") end
         if highlights.phonetic.italic then table.insert(gui, "italic") end
         if highlights.phonetic.underline then table.insert(gui, "underline") end
-        
+
         if #gui > 0 then
             phonetic_hl = phonetic_hl .. " gui=" .. table.concat(gui, ",")
         end
-        
+
         vim.cmd(phonetic_hl)
     end
 end
@@ -130,11 +130,11 @@ function TranslateWindow.new(text)
         end
     end
     api.nvim_buf_set_lines(self.bufnr, 0, -1, false, filtered_lines)
-    
+
     -- 设置缓冲区选项
     api.nvim_buf_set_option(self.bufnr, 'modifiable', false)
     api.nvim_buf_set_option(self.bufnr, 'filetype', 'kd')  -- 这会自动加载我们的语法文件
-    
+
     -- 确保语法高亮开启并应用自定义高亮
     vim.api.nvim_buf_call(self.bufnr, function()
         vim.cmd('syntax enable')

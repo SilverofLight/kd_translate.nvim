@@ -43,5 +43,21 @@ M.config = {
         row = 1,             -- 相对于光标的垂直偏移
         col = 0,             -- 相对于光标的水平偏移
     }
+    -- 添加了高亮组（目前只有这两个）
+    highlights = {
+        word = {
+            fg = "#FF0000",    -- 前景色
+            -- bg = "#FFFFFF",    -- 背景色
+            bold = false,       -- 是否粗体
+            italic = false,    -- 是否斜体
+            underline = true  -- 是否下划线
+        },
+        phonetic = {          -- 音标高亮
+            fg = "#00FF00",
+            bg = "NONE",
+            bold = false,
+            italic = true,
+            underline = false
+        },
 }
 ```
