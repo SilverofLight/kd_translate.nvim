@@ -263,7 +263,7 @@ function M.translate(mode)
 	local cmd = { translate_cmd }
 	-- 检查是否包含中文字符或内部空格
 	if trimmed_text:find("[\xE4-\xE9][\x80-\xBF][\x80-\xBF]") or trimmed_text:find("%s+") then
-		print("here")
+		-- print("here")
 		table.insert(cmd, "-t")
 	end
 	table.insert(cmd, text)
