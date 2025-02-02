@@ -173,8 +173,6 @@ TranslateWindow.__index = TranslateWindow
 function TranslateWindow.new(text)
 	local self = setmetatable({}, TranslateWindow)
 
-	-- 创建缓冲区
-	self.bufnr = api.nvim_create_buf(false, true)
 	-- 过滤掉包含特定关键字的行
 	local lines = vim.split(text, "\n")
 	local filtered_lines = {}
@@ -183,8 +181,9 @@ function TranslateWindow.new(text)
 			table.insert(filtered_lines, line)
 		end
 	end
+	-- 创建缓冲区
+	self.bufnr = api.nvim_create_buf(false, true)
 	api.nvim_buf_set_lines(self.bufnr, 0, -1, false, filtered_lines)
-
 	-- 设置缓冲区选项
 	api.nvim_buf_set_option(self.bufnr, "modifiable", false)
 	api.nvim_buf_set_option(self.bufnr, "filetype", "kd") -- 这会自动加载我们的语法文件
@@ -203,6 +202,7 @@ function TranslateWindow.new(text)
 	self.win_opts = vim.tbl_extend("force", M.config.window, {
 		width = width,
 		height = height,
+		zindex = 100, -- enable zindex max than that on most common scenes.
 	})
 
 	-- 创建窗口
@@ -215,7 +215,9 @@ function TranslateWindow.new(text)
 end
 
 function TranslateWindow:open()
-	self.winid = api.nvim_open_win(self.bufnr, true, self.win_opts)
+	self.winid = api.nvim_open_win(self.bufnr, false, self.win_opts)
+	-- enter the window
+	api.nvim_set_current_win(self.winid)
 	api.nvim_win_set_option(self.winid, "wrap", true)
 	-- 确保窗口中启用语法高亮
 	vim.api.nvim_win_call(self.winid, function()
