@@ -46,6 +46,7 @@ local translate_cmd = "kd"
 
 -- 添加一个全局变量来跟踪当前的翻译窗口
 local current_window = nil
+local cursor_win = nil
 
 -- 获取选中的文本
 local function get_visual_selection()
@@ -173,8 +174,6 @@ TranslateWindow.__index = TranslateWindow
 function TranslateWindow.new(text)
 	local self = setmetatable({}, TranslateWindow)
 
-	-- 创建缓冲区
-	self.bufnr = api.nvim_create_buf(false, true)
 	-- 过滤掉包含特定关键字的行
 	local lines = vim.split(text, "\n")
 	local filtered_lines = {}
@@ -183,8 +182,9 @@ function TranslateWindow.new(text)
 			table.insert(filtered_lines, line)
 		end
 	end
+	-- 创建缓冲区
+	self.bufnr = api.nvim_create_buf(false, true)
 	api.nvim_buf_set_lines(self.bufnr, 0, -1, false, filtered_lines)
-
 	-- 设置缓冲区选项
 	api.nvim_buf_set_option(self.bufnr, "modifiable", false)
 	api.nvim_buf_set_option(self.bufnr, "filetype", "kd") -- 这会自动加载我们的语法文件
@@ -203,10 +203,14 @@ function TranslateWindow.new(text)
 	self.win_opts = vim.tbl_extend("force", M.config.window, {
 		width = width,
 		height = height,
+		zindex = 100, -- enable zindex max than that on most common scenes.
 	})
 
 	-- 创建窗口
 	self:open()
+
+	-- 设置 autocmds
+	self:setup_autocmds()
 
 	-- 设置按键映射
 	self:setup_keymaps()
@@ -215,7 +219,7 @@ function TranslateWindow.new(text)
 end
 
 function TranslateWindow:open()
-	self.winid = api.nvim_open_win(self.bufnr, true, self.win_opts)
+	self.winid = api.nvim_open_win(self.bufnr, false, self.win_opts)
 	api.nvim_win_set_option(self.winid, "wrap", true)
 	-- 确保窗口中启用语法高亮
 	vim.api.nvim_win_call(self.winid, function()
@@ -230,16 +234,38 @@ function TranslateWindow:setup_keymaps()
 	api.nvim_buf_set_keymap(self.bufnr, "n", "<ESC>", ":q<CR>", opts)
 end
 
+-- 设置 autocmds
+function TranslateWindow:setup_autocmds()
+	api.nvim_create_autocmd({ "CursorMoved" }, {
+		buffer = api.nvim_get_current_buf(),
+		callback = function()
+			self:close()
+		end,
+	})
+
+	api.nvim_create_autocmd({ "WinLeave" }, {
+		buffer = self.bufnr,
+		callback = function()
+			self:close()
+		end,
+	})
+end
+
 ---检查窗口是否有效
 ---@return boolean
 function TranslateWindow:is_valid()
-	return self.winid and api.nvim_win_is_valid(self.winid)
+	if current_window then
+		return self.winid and api.nvim_win_is_valid(self.winid)
+	else
+		return false
+	end
 end
 
 ---关闭窗口
 function TranslateWindow:close()
 	if self:is_valid() then
 		api.nvim_win_close(self.winid, true)
+		current_window = nil
 	end
 end
 
@@ -286,6 +312,15 @@ function M.translate(mode)
 	end)
 end
 
+function M._translate(mode)
+	if current_window and current_window:is_valid() then
+		-- when twice pressed the key, enter the window
+		-- enter the window
+		api.nvim_set_current_win(current_window.winid)
+	else
+		M.translate(mode)
+	end
+end
 -- 修改 setup 函数
 function M.setup(opts)
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
