@@ -232,6 +232,22 @@ function TranslateWindow:setup_keymaps()
 	local opts = { noremap = true, silent = true }
 	api.nvim_buf_set_keymap(self.bufnr, "n", "q", ":q<CR>", opts)
 	api.nvim_buf_set_keymap(self.bufnr, "n", "<ESC>", ":q<CR>", opts)
+	-- I hope that I could scroll the translate window without enter it.
+	local scroll_lines = math.floor(api.nvim_win_get_height(self.winid) / 2) -- half sceen scroll
+	vim.keymap.set("n", "<C-f>", function()
+		if api.nvim_win_is_valid(self.winid) then
+			api.nvim_win_call(self.winid, function()
+				vim.cmd("normal!" .. scroll_lines .. "j")
+			end)
+		end
+	end, { noremap = true, silent = true, buffer = api.nvim_get_current_buf() })
+	vim.keymap.set("n", "<C-b>", function()
+		if api.nvim_win_is_valid(self.winid) then
+			api.nvim_win_call(self.winid, function()
+				vim.cmd("normal!" .. scroll_lines .. "k")
+			end)
+		end
+	end, { noremap = true, silent = true, buffer = api.nvim_get_current_buf() })
 end
 
 -- 设置 autocmds
