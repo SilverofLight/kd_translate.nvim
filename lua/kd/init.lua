@@ -285,6 +285,24 @@ function TranslateWindow:close()
 	end
 end
 
+local function clean_links(text)
+	-- Step 1: 移除 Markdown 反引号代码块
+	text = text:gsub("`([^`]+)`", "%1") -- 移除行内反引代码（如 `Command` → Command）
+	text = text:gsub("```.-```", "") -- 移除多行代码块（如 ```rust...```）
+
+	-- Step 2: 原有的链接和 Markdown 链接清理
+	text = text:gsub("%[([^%[%]]+)%]%(%S+%)", "%1")
+	text = text:gsub("!%[([^%[%]]+)%]%(%S+%)", "%1")
+	text = text:gsub("%[.-%]:%s*%S+", "")
+	text = text:gsub("%f[%w](%a+://%S+)", "")
+	text = text:gsub("%f[%w](www%.[%w-]+%.%S+)", "")
+
+	-- Step 3: 清理残留标点
+	text = text:gsub("%s*[%.!?,;:]%s*", " ")
+	text = text:gsub("%s+", " ")
+	return text:match("^%s*(.-)%s*$")
+end
+
 -- 修改翻译函数
 function M.translate(mode)
 	-- 如果存在旧窗口，先关闭它
@@ -302,13 +320,14 @@ function M.translate(mode)
 
 	-- 去除首尾空格后检查是否包含内部空格（多个单词）
 	local trimmed_text = text:match("^%s*(.-)%s*$") -- 去除首尾空格
+	trimmed_text = clean_links(trimmed_text)
 	local cmd = { translate_cmd }
 	-- 检查是否包含中文字符或内部空格
 	if trimmed_text:find("[\xE4-\xE9][\x80-\xBF][\x80-\xBF]") or trimmed_text:find("%s+") then
 		-- print("here")
 		table.insert(cmd, "-t")
 	end
-	table.insert(cmd, text)
+	table.insert(cmd, trimmed_text)
 
 	-- vim.notify(vim.inspect(cmd))
 
