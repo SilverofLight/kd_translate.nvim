@@ -301,9 +301,9 @@ local function clean_links(text)
 	text = text:gsub("%[.-%]:%s*%S+", "")
 	text = text:gsub("%f[%w](%a+://%S+)", "")
 	text = text:gsub("%f[%w](www%.[%w-]+%.%S+)", "")
+	text = text:gsub("%*%*([^%*]+)%*%*", "%1") -- **粗体** → 粗体
+	text = text:gsub("%*([^%*]+)%*", "%1") -- *斜体* → 斜体
 
-	-- Step 3: 清理残留标点
-	text = text:gsub("%s*[%.!?,;:]%s*", " ")
 	text = text:gsub("%s+", " ")
 	return text:match("^%s*(.-)%s*$")
 end
