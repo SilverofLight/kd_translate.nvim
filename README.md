@@ -59,5 +59,9 @@ M.config = {
             italic = true,
             underline = false
         },
+        keymap = {
+            scrollDown = "<C-f>",
+            scrollUp = "<C-b>",
+        },
 }
 ```

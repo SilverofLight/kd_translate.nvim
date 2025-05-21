@@ -17,6 +17,10 @@ M.config = {
 		row = 1, -- 相对于光标的垂直偏移
 		col = 0, -- 相对于光标的水平偏移
 	},
+  keymap = {
+    scrollDown = "<C-f>",
+    scrollUp = "<C-b>",
+  },
 	-- 添加高亮组配置
 	highlights = {
 		word = {
@@ -239,18 +243,30 @@ function TranslateWindow:setup_keymaps()
 	api.nvim_buf_set_keymap(self.bufnr, "n", "<ESC>", ":q<CR>", opts)
 	-- I hope that I could scroll the translate window without enter it.
 	local scroll_lines = math.floor(api.nvim_win_get_height(self.winid) / 2) -- half sceen scroll
-	vim.keymap.set("n", "<C-f>", function()
+	vim.keymap.set("n", M.config.keymap.scrollDown, function()
 		if api.nvim_win_is_valid(self.winid) then
 			api.nvim_win_call(self.winid, function()
 				vim.cmd("normal!" .. scroll_lines .. "j")
 			end)
+    else
+      api.nvim_feedkeys(
+        api.nvim_replace_termcodes(M.config.keymap.scrollDown, true, true, true),
+        "n",
+        true
+      )
 		end
 	end, { noremap = true, silent = true, buffer = api.nvim_get_current_buf() })
-	vim.keymap.set("n", "<C-b>", function()
+	vim.keymap.set("n", M.config.keymap.scrollUp, function()
 		if api.nvim_win_is_valid(self.winid) then
 			api.nvim_win_call(self.winid, function()
 				vim.cmd("normal!" .. scroll_lines .. "k")
 			end)
+    else
+      api.nvim_feedkeys(
+        api.nvim_replace_termcodes(M.config.keymap.scrollUp, true, true, true),
+        "n",
+        true
+      )
 		end
 	end, { noremap = true, silent = true, buffer = api.nvim_get_current_buf() })
 end
