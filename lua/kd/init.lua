@@ -54,12 +54,18 @@ local cursor_win = nil
 
 -- 获取选中的文本
 local function get_visual_selection()
-	-- 获取可视模式类型
 	-- 获取选区的起始和结束位置
 	local start_pos = vim.fn.getpos("v")
 	local end_pos = vim.fn.getpos(".")
 	local start_row, start_col = start_pos[2], start_pos[3]
 	local end_row, end_col = end_pos[2], end_pos[3]
+
+  if start_col == end_col and start_row == end_row then
+    start_pos = fn.getpos("'<")
+    end_pos = fn.getpos("'>")
+	  start_row, start_col = start_pos[2], start_pos[3]
+	  end_row, end_col = end_pos[2], end_pos[3]
+  end
   if start_col > end_col then
     local tmp = end_col
     end_col = start_col
