@@ -17,10 +17,10 @@ M.config = {
 		row = 1, -- 相对于光标的垂直偏移
 		col = 0, -- 相对于光标的水平偏移
 	},
-  keymap = {
-    scrollDown = "<C-f>",
-    scrollUp = "<C-b>",
-  },
+	keymap = {
+		scrollDown = "<C-f>",
+		scrollUp = "<C-b>",
+	},
 	-- 添加高亮组配置
 	highlights = {
 		word = {
@@ -54,39 +54,18 @@ local cursor_win = nil
 
 -- 获取选中的文本
 local function get_visual_selection()
-	-- 获取选区的起始和结束位置
-	local start_pos = vim.fn.getpos("v")
-	local end_pos = vim.fn.getpos(".")
-	local start_row, start_col = start_pos[2], start_pos[3]
-	local end_row, end_col = end_pos[2], end_pos[3]
+	pcall(function()
+		vim.cmd('normal! gv"vy')
+	end)
 
-  if start_col == end_col and start_row == end_row then
-    start_pos = fn.getpos("'<")
-    end_pos = fn.getpos("'>")
-	  start_row, start_col = start_pos[2], start_pos[3]
-	  end_row, end_col = end_pos[2], end_pos[3]
-  end
-  if start_col > end_col then
-    local tmp = end_col
-    end_col = start_col
-    start_col = tmp
-  end
+	local text = vim.fn.getreg("v")
+	vim.fn.setreg("v", {}) -- 清空，避免污染
 
-	-- 检查是否跨行
-	if start_row == end_row then
-		-- 单行选区：提取范围内的文本
-		local line = vim.api.nvim_get_current_line()
-		return line:sub(start_col, end_col)
+	if text and #text > 0 then
+		return text
 	else
-		-- 多行选区：提取范围内的多行文本
-		local lines = vim.api.nvim_buf_get_lines(0, start_row - 1, end_row, false)
-
-		-- 处理第一行和最后一行的边界
-		lines[1] = lines[1]:sub(start_col)
-		lines[#lines] = lines[#lines]:sub(1, end_col)
-
-		-- 拼接为字符串（多行间添加换行符）
-		return table.concat(lines, "\n")
+		vim.notify("没有选中内容", vim.log.levels.WARN)
+		return ""
 	end
 end
 
@@ -254,12 +233,8 @@ function TranslateWindow:setup_keymaps()
 			api.nvim_win_call(self.winid, function()
 				vim.cmd("normal!" .. scroll_lines .. "j")
 			end)
-    else
-      api.nvim_feedkeys(
-        api.nvim_replace_termcodes(M.config.keymap.scrollDown, true, true, true),
-        "n",
-        true
-      )
+		else
+			api.nvim_feedkeys(api.nvim_replace_termcodes(M.config.keymap.scrollDown, true, true, true), "n", true)
 		end
 	end, { noremap = true, silent = true, buffer = api.nvim_get_current_buf() })
 	vim.keymap.set("n", M.config.keymap.scrollUp, function()
@@ -267,12 +242,8 @@ function TranslateWindow:setup_keymaps()
 			api.nvim_win_call(self.winid, function()
 				vim.cmd("normal!" .. scroll_lines .. "k")
 			end)
-    else
-      api.nvim_feedkeys(
-        api.nvim_replace_termcodes(M.config.keymap.scrollUp, true, true, true),
-        "n",
-        true
-      )
+		else
+			api.nvim_feedkeys(api.nvim_replace_termcodes(M.config.keymap.scrollUp, true, true, true), "n", true)
 		end
 	end, { noremap = true, silent = true, buffer = api.nvim_get_current_buf() })
 end
@@ -327,7 +298,9 @@ local function clean_links(text)
 	text = text:gsub("%*([^%*]+)%*", "%1") -- *斜体* → 斜体
 
 	text = text:gsub("%s+", " ")
-	return text:match("^%s*(.-)%s*$")
+	-- 🔥 新增：移除末尾部分标点符号
+	text = text:gsub("[:.,%s]+$", "")
+	return text
 end
 
 -- 修改翻译函数
@@ -348,9 +321,10 @@ function M.translate(mode)
 	-- 去除首尾空格后检查是否包含内部空格（多个单词）
 	local trimmed_text = text:match("^%s*(.-)%s*$") -- 去除首尾空格
 	trimmed_text = clean_links(trimmed_text)
+	-- vim.inspect(print(trimmed_text))
 	local cmd = { translate_cmd }
 	-- 检查是否包含中文字符或内部空格
-	if trimmed_text:find("[\xE4-\xE9][\x80-\xBF][\x80-\xBF]") or trimmed_text:find("%s+") then
+	if trimmed_text and trimmed_text:find("[\xE4-\xE9][\x80-\xBF][\x80-\xBF]") or trimmed_text:find("%s+") then
 		-- print("here")
 		table.insert(cmd, "-t")
 	end
