@@ -55,7 +55,7 @@ local cursor_win = nil
 -- 获取选中的文本
 local function get_visual_selection()
 	pcall(function()
-		vim.cmd('normal! gv"vy')
+		vim.cmd('silent! normal! gv"vy')
 	end)
 
 	local text = vim.fn.getreg("v")
